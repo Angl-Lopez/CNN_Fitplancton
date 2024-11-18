@@ -76,4 +76,117 @@ Se hicieron 3 propuestas para el modelado:
 
 A partir de las pruebas realziadas, la propuesta seleccionada fue el modelo único con una precisión ponderada de 95% respecto al conjunto de prueba.
 
+Este modelo fue entrenado usando los siguientes parámetros:
+
+Para  hacer un balanceo de los pesos de clases y combatir el desbalance de clases.
+
+```
+from sklearn.utils.class_weight import compute_class_weight
+
+class_weight = compute_class_weight(class_weight='balanced',
+                                    classes=np.unique(cls_train),
+                                    y=cls_train)
+class_weight = dict(enumerate(class_weight))
+```
+
+Callbacks para evitar el sobre ajuste y el underfitting.
+
+```
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, TensorBoard, ModelCheckpoint
+
+early_stopping = EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=1e-7)
+
+```
+
+Top 10 de exactitud:
+
+```
+def top_10_accuracy(y_true, y_pred):
+    return tf.keras.metrics.top_k_categorical_accuracy(y_true, y_pred, k=10)
+```
+
+Entrenamiento inicial del modelo:
+
+```
+starting_epoch = 0
+epochs_top_layers = 10
+epochs_fine_tuning = 50
+
+from tensorflow.keras.regularizers import l2
+# Crear el modelo base de InceptionV3
+base_model = InceptionV3(weights='imagenet', include_top=False)
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dense(1024, activation='relu', kernel_regularizer=l2(0.001))(x)  # Regularización L2
+x = Dropout(0.3)(x)  # Dropout del 30%
+
+
+# Actualizar la capa de salida
+predictions = Dense(num_classes, activation='softmax')(x)
+model = Model(inputs=base_model.input, outputs=predictions)
+
+# Congelar todas las capas de la base del modelo excepto por el primer bloque Inception
+for layer in base_model.layers[:-249]:
+    layer.trainable = False
+for layer in base_model.layers[-249:]:
+    layer.trainable = True
+
+# Compilar el modelo
+model.compile(optimizer=Adam(1e-4), loss='categorical_crossentropy', metrics=['categorical_accuracy', top_10_accuracy])
+
+# Entrenar el modelo (solo las capas superiores)
+history = model.fit(train_generator,
+                    epochs=epochs_top_layers+starting_epoch,
+                    validation_data=validation_generator,
+                    class_weight = class_weight,
+                    callbacks = [early_stopping, reduce_lr],
+                    shuffle=True)
+
+```
+
+Segunda fase del entrenamiento:
+
+```
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from datetime import datetime
+
+# Descongelar todas las capas
+model.trainable = True
+
+# Recompilar el modelo con una tasa de aprendizaje más baja
+model.compile(optimizer=Adam(learning_rate=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy', top_10_accuracy])
+
+# Continuar entrenando el modelo (fine-tuning)
+history = model.fit(train_generator,
+                    initial_epoch=starting_epoch+epochs_top_layers,
+                    epochs=starting_epoch+epochs_top_layers+epochs_fine_tuning,
+                    validation_data=validation_generator,
+                    class_weight = class_weight,
+                    callbacks = [early_stopping, reduce_lr],
+                    shuffle=True)
+```
+Tercera y última fase del entrenamiento:
+
+```
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from datetime import datetime
+
+# Descongelar todas las capas
+model.trainable = True
+
+# Recompilar el modelo con una tasa de aprendizaje más baja
+model.compile(optimizer=Adam(learning_rate=1e-6), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
+# Continuar entrenando el modelo (fine-tuning)
+history = model.fit(train_generator,
+                    epochs=5,
+                    validation_data=validation_generator,
+                    class_weight = class_weight,
+                    callbacks = [early_stopping, reduce_lr],
+                    shuffle=True)
+```
+
+Este entrenamiento dio como resultados la siguiente matriz de confusión.
+
 ![image](https://github.com/user-attachments/assets/7073a052-e15a-4df9-b3f8-91a5ea4ff0b7)

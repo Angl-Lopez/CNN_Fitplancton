@@ -11,6 +11,13 @@ Para hacer el acceso a este modelo más sencillo. Se hizo una aplicación web en
 
 ![image](https://github.com/user-attachments/assets/e23247c6-1811-4071-98cd-fea846157d58)
 
+# Anexos
+
+* Conjunto de datos: https://drive.google.com/file/d/1xW2zUZpablSUA9fGenl-ntKg6-KXn6kA/view?usp=drive_link
+* API de predicción del modelo: https://daniel00611-api-fitoplanctonclassifier.hf.space
+* Modelo: https://huggingface.co/Daniel00611/InceptionV3_72
+* Link de aplicación Fitosense Clasificador: https://fitosense-clasificador.anvil.app/
+
 ## ¿Cómo usar?
 
 Para usar la aplicación es un proceso muy sencillo, dirigite a la página de Clasificador:
@@ -55,6 +62,8 @@ Este apartado es una guía para que el usuario pueda revisar cómo puede hacer y
 # Conjunto de datos
 
 Para el modelo, se consiguieron las imágenes de 3 fuentes y se hizo una distribución en 70% para entrenamiento, 15% validación y 15% prueba. MBLWHOI Library y IFCB Dashboard son imágenes distribuidas por el Instituto Oceanográfico de WoodHole (WHOI) y son tomadas con un Imaging FlowCytobot (IFCB) que hace el proceso de extracción y toma de imágenes de muestras de fitplancton automáticamente. Las imágenes del IFCB son tomadas con un láser de alta precisión, no obstante, las imágenes tomadas no son tan similares a las que se toman en laboratorio. Es por eso que se hizo un conjunto de PlanktonNet, un foro de biología que se dedica a clasificar imágenes de microorganismos y que tiene una biblioteca abierta.
+
+El cojunto se encuentra disponible en: https://drive.google.com/file/d/1xW2zUZpablSUA9fGenl-ntKg6-KXn6kA/view?usp=drive_link
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/1381e330-ce93-4b97-a6b9-e085d2ee5cca" alt="Segunda imagen">
@@ -190,3 +199,4 @@ history = model.fit(train_generator,
 Este entrenamiento dio como resultados la siguiente matriz de confusión.
 
 ![image](https://github.com/user-attachments/assets/7073a052-e15a-4df9-b3f8-91a5ea4ff0b7)
+
